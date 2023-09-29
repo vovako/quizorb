@@ -49,26 +49,22 @@ function interfacePage(ws) {
 				break;
 
 			case 'answer_question':
-
-
+				updateTheme(msg.data.Questions)
+				break;
 			case 'select_theme':
 				updateTheme(msg.data.Questions)
 				const answerEl = document.querySelector('.lead-theme__answer')
 				answerEl.textContent = msg.data.Answer
 				break;
-
-			// case 'answer_question':
-			// 	updateTiles(msg.data.Questions)
-			// 	break;
-
-			// case 'to-tiles':
-			// 	toPage('tiles')
-			// 	break;
+			case 'restart_game':
+				localStorage.setItem('session_id', msg.data)
+				location.reload()
+				break;
 		}
 	}
 	function updateThemes(themes) {
 
-		const themesBox = document.querySelector('.lead-themes__container')
+		const themesBox = document.querySelector('.lead-themes__list')
 		themesBox.innerHTML = ''
 		themes.forEach(theme => {
 			themesBox.insertAdjacentHTML('beforeend', `
@@ -85,7 +81,7 @@ function interfacePage(ws) {
 		const headerText = themeContainer.querySelector('.lead-theme__text')
 		const headerPoints = themeContainer.querySelector('.lead-theme__points span')
 
-		if (questions.findIndex(q => q.Status === 'solved') !== -1) {
+		if (questions.findIndex(q => q.Status === 'solved') !== -1||questions.findIndex(q => q.Status === '') == -1) {
 			toPage('to-themes-btn')
 			return
 		}
@@ -142,6 +138,10 @@ function interfacePage(ws) {
 					id: questionId
 				}
 			}))
+			ws.send(JSON.stringify({
+				action: 'get_themes',
+				data: localStorage.getItem('session_id')
+			}))
 		} else if (target.classList.contains('lead-theme__apply-btn')) {
 			const questionId = +target.closest('.lead-theme__container').dataset.questionId
 
@@ -167,5 +167,15 @@ function interfacePage(ws) {
 			toPage('lead-themes')
 		}
 	})
+
+	const deleteGameBtn = document.querySelector('.lead-themes__delte-btn')
+	deleteGameBtn.addEventListener('click', function() {
+		ws.send(JSON.stringify({
+			action: 'restart_game',
+			data: localStorage.getItem('session_id')
+		}))
+	})
 }
+
+
 export default interfacePage
