@@ -2,7 +2,6 @@ import { toPage } from "./functions.js"
 
 async function viewPage(ws) {
 
-
 	ws.onopen = function () {
 		console.log("Соединение удалось")
 
@@ -20,6 +19,8 @@ async function viewPage(ws) {
 	ws.onmessage = function (evt) {
 
 		const msg = JSON.parse(evt.data)
+		const answerPopup = document.querySelector('.answer.popup')
+
 		console.log(msg);
 
 		switch (msg.action) {
@@ -32,56 +33,66 @@ async function viewPage(ws) {
 					location.reload()
 				}
 
-				const tilesBox = document.querySelector('.tiles__container')
-				const questions = msg.data.Questions
-				questions.forEach((q, i) => {
-					tilesBox.insertAdjacentHTML('beforeend', `<div class="tiles-item ${q.Solved ? 'checked' : ''}">${i + 1}</div>`)
-				})
-				toPage('tiles')
+				updateThemes(msg.data.Themes)
+				toPage('themes')
 				break;
 
-			case 'select_question':
-				updateQuestion(msg.data.Question)
-				updateAnswer(msg.data.Question)
-				toPage('question')
+			case 'select_theme':
+				updateTheme(msg.data.Questions)
+				toPage('theme')
+
+				const answerText = answerPopup.querySelector('.answer__text')
+				const answerIMG = answerPopup.querySelector('.answer__image img')
+				answerText.textContent = msg.data.Answer
+				answerIMG.src = msg.data.IMGAnswer
 				break;
 
 			case 'answer_question':
-				
-				toPage('answer')
+				updateTheme(msg.data.Questions)
 				break;
 
 			case 'to-tiles':
-				toPage('tiles')
+				answerPopup.classList.remove('active')
+				toPage('themes')
 				break;
 		}
 	}
-
-	function updateTiles(data) {
-		const tiles = document.querySelectorAll('.tiles-item')
-		data.forEach((solved, i) => {
-			if (solved) {
-				tiles[i].classList.add('checked')
-			}
-		});
+	function updateThemes(themes) {
+		const themesBox = document.querySelector('.themes__container')
+		themesBox.innerHTML = ''
+		themes.forEach(theme => {
+			themesBox.insertAdjacentHTML('beforeend', `
+			<div class="themes-item ${theme.Status}" data-theme-id="${theme.id}">
+				<div class="themes-item__text">${theme.Title}</div>
+			</div>
+			`)
+		})
 	}
 
-	function updateQuestion(data) {
-		const questionPage = document.querySelector('[data-page="question"]')
-		const qTextEl = questionPage.querySelector('.question__text')
-		const qImgEl = questionPage.querySelector('.question__image img')
+	function updateTheme(questions) {
 
-		qTextEl.textContent = data.question
-		qImgEl.src = data.url_question !== '' ? data.url_question : 'img/temp/img.svg'
-	}
+		if (questions.findIndex(q => q.Status === 'solved') !== -1) {
+			const answerPopup = document.querySelector('.answer.popup')
+			answerPopup.classList.add('active')
+			return
+		}
 
-	function updateAnswer(data) {
-		const answerPage = document.querySelector('[data-page="answer"]')
-		const qTextEl = answerPage.querySelector('.question__text')
-		const qImgEl = answerPage.querySelector('.question__image img')
+		questions.sort((a, b) => b.Costs - a.Costs)
 
-		qTextEl.textContent = data.answer
-		qImgEl.src = data.url_answer !== '' ? data.url_answer : 'img/temp/img.svg'
+		const themeBox = document.querySelector('.theme__list')
+		let activeFinded = false
+		themeBox.innerHTML = ''
+		questions.forEach((question, i) => {
+
+			themeBox.insertAdjacentHTML('beforeend', `
+				<div class="theme-item ${question.Status} ${!activeFinded && question.Status !== 'failed' ? 'active' : ''}">
+					<div class="theme-item__text">Вопрос ${i + 1}</div>
+					<div class="theme-item__reward"><span>${question.Costs}</span> баллов</div>
+					<div class="theme-item__question ${activeFinded ? '' : 'active'}">${question.question}</div>
+				</div>
+			`)
+			if (!activeFinded && question.Status !== 'failed') activeFinded = true
+		})
 	}
 }
 
