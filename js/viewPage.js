@@ -41,10 +41,8 @@ async function viewPage(ws) {
 				updateTheme(msg.data.Questions)
 				toPage('theme')
 
-				const answerText = answerPopup.querySelector('.answer__text')
-				const answerIMG = answerPopup.querySelector('.answer__image img')
-				answerText.textContent = msg.data.Answer
-				answerIMG.src = msg.data.IMGAnswer
+				answerPopup.querySelector('.answer__text').textContent = msg.data.Answer
+				answerPopup.querySelector('.answer__image img').src = msg.data.IMGAnswer
 				break;
 
 			case 'answer_question':
@@ -60,6 +58,17 @@ async function viewPage(ws) {
 			case 'restart_game':
 				localStorage.setItem('session_id', msg.data)
 				location.reload()
+				break;
+			case 'question_trash':
+				if (Object.keys(msg.data).length < 1) break;
+
+					updateTheme([msg.data.Question])
+					toPage('theme')
+					answerPopup.querySelector('.answer__text').textContent = msg.data.Answer
+				answerPopup.querySelector('.answer__image img').src = msg.data.Question.url_answer
+				break;
+			case 'answer_question_trash':
+				updateTheme(msg.data.Questions)
 				break;
 		}
 	}
@@ -77,9 +86,20 @@ async function viewPage(ws) {
 
 	function updateTheme(questions) {
 
-		if (questions.findIndex(q => q.Status === 'solved') !== -1 || questions.findIndex(q => q.Status === '') == -1) {
+		const isSolved = questions.findIndex(q => q.Status === 'solved') !== -1
+		if (isSolved || questions.findIndex(q => q.Status === '') == -1) {
 			const answerPopup = document.querySelector('.answer.popup')
 			answerPopup.classList.add('active')
+
+			if (isSolved) {
+				const pointsEl = document.querySelector('.answer__points-anim')
+				const pointsCount = questions[questions.findIndex(q => q.Status === 'solved')].Costs
+				pointsEl.textContent = pointsCount
+				pointsEl.classList.add('active')
+				setTimeout(() => {
+					pointsEl.classList.remove('active')
+				}, 1000)
+			}
 			return
 		}
 
